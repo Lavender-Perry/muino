@@ -39,6 +39,7 @@ void setup() {
     lcd.init();
     lcd.createChar(0, pausechar);
     lcd.createChar(1, playchar);
+    lcd.backlight();
     lcd.home();
     lcd.print("Note 1:");
 
