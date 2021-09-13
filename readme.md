@@ -1,6 +1,5 @@
 # Muino
 A melody maker on Arduino.
-This is still extremely unfinished & does not do anything right now.
 
 ## Running
 Open the sketch in the Arduino IDE & upload it to your Arduino board.
