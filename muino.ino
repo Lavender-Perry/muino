@@ -10,32 +10,35 @@ LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
 int notes[8]; // Frequencies of notes in the melody
 volatile bool buttonPressed = false;
 
+const byte pausechar[8] = {
+    B11011,
+    B11011,
+    B11011,
+    B11011,
+    B11011,
+    B11011,
+    B11011,
+    B11011
+};
+const byte playchar[8] = {
+    B10000,
+    B11000,
+    B11100,
+    B11110,
+    B11110,
+    B11100,
+    B11000,
+    B10000
+};
+
 void setup() {
     pinMode(2, INPUT);
     for (byte i = 4; i <= 12; i++)
         pinMode(i, OUTPUT);
 
-    lcd.begin();
-    lcd.createChar(0, {
-            B11011,
-            B11011,
-            B11011,
-            B11011,
-            B11011,
-            B11011,
-            B11011,
-            B11011
-            }); // Pause character
-    lcd.createChar(1, {
-            B10000,
-            B11000,
-            B11100,
-            B11110,
-            B11110,
-            B11100,
-            B11000,
-            B10000
-            }); // Play character
+    lcd.init();
+    lcd.createChar(0, pausechar);
+    lcd.createChar(1, playchar);
     lcd.home();
     lcd.print("Note 1:");
 
@@ -89,7 +92,7 @@ void loop() {
 
         /* Play note */
         tone(4, notes[i], noteDuration);
-        lightOn(i)
+        lightOn(i);
         delay(notePause);
     }
 }
