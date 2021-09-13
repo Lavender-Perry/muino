@@ -45,7 +45,7 @@ void setup() {
 
     attachInterrupt(digitalPinToInterrupt(3), buttonISR, FALLING);
 
-    for (int i = 0; i < 8; i++) {
+    for (byte i = 0; i < 8; i++) {
         lcd.setCursor(0, 1);
 
         while (!buttonPressed) { // Until interrupt
@@ -68,7 +68,7 @@ void setup() {
 }
 
 void loop() {
-    for (int i = 0; i < 8; i++) {
+    for (byte i = 0; i < 8; i++) {
         /* Check if pause button pressed */
         if (buttonPressed) {
             setLCDPlayingStatus(0);
