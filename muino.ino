@@ -83,7 +83,7 @@ void loop() {
         int noteDuration = 5002 - analogRead(DIAL);
         int notePause = noteDuration * 1.3;
         char* bpm;
-        sprintf(bpm, "%.3d", 60 * 100 / noteDuration);
+        sprintf(bpm, "%.3d", 30 * 100 / noteDuration);
         lcd.setCursor(5, 0);
         lcd.print(bpm);
 
