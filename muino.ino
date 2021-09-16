@@ -2,13 +2,14 @@
 
 #include "compile_settings.h"
 
+bool buttonPressed();
 void setLCDPlayingStatus(byte playing);
 void lightOn(byte light);
 void buttonISR();
 
 LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
 int notes[8]; // Frequencies of notes in the melody
-volatile bool buttonPressed = false;
+volatile bool isr = false; // If ISR has occurred since last button read
 
 const byte pausechar[8] = {
     B11011,
@@ -32,7 +33,7 @@ const byte playchar[8] = {
 };
 
 void setup() {
-    pinMode(2, INPUT);
+    pinMode(BUTTON, INPUT);
     for (byte i = 4; i <= 12; i++)
         pinMode(i, OUTPUT);
 
@@ -45,20 +46,19 @@ void setup() {
 
 
     int frequency;
-    char* freq_str;
+    char freq_str[5];
 
-    attachInterrupt(digitalPinToInterrupt(3), buttonISR, FALLING);
+    attachInterrupt(digitalPinToInterrupt(BUTTON), buttonISR, RISING);
 
     for (byte i = 0; i < 8; i++) {
         lcd.setCursor(0, 1);
 
-        while (!buttonPressed) { // Until interrupt
+        while (!buttonPressed()) { // Until interrupt
             frequency = analogRead(DIAL) + 31;
             sprintf(freq_str, "%.4d", frequency);
             lcd.print(freq_str);
             lcd.setCursor(0, 1);
         }
-        buttonPressed = false;
 
         notes[i] = frequency;
         lcd.setCursor(5, 0);
@@ -74,19 +74,17 @@ void setup() {
 void loop() {
     for (byte i = 0; i < 8; i++) {
         /* Check if pause button pressed */
-        if (buttonPressed) {
+        if (buttonPressed()) {
             setLCDPlayingStatus(0);
             // Wait until pressed again
-            buttonPressed = false;
-            while (!buttonPressed);
-            buttonPressed = false;
+            while (!buttonPressed());
             setLCDPlayingStatus(1);
         }
 
         /* Update speed */
-        int noteDuration = 5002 - analogRead(DIAL);
+        int noteDuration = 1027 - analogRead(DIAL);
         int notePause = noteDuration * 1.3;
-        char* bpm;
+        char bpm[4];
         sprintf(bpm, "%.3d", 30 * 100 / noteDuration);
         lcd.setCursor(5, 0);
         lcd.print(bpm);
@@ -96,6 +94,23 @@ void loop() {
         lightOn(i);
         delay(notePause);
     }
+}
+
+/* Returns if button has been pressed, with debouncing */
+bool buttonPressed() {
+    static bool switchPending = false;
+    static long int timer;
+    if (isr)
+        if (digitalRead(BUTTON) == HIGH) {
+            switchPending = true;
+            timer = millis();
+        } else
+            if (switchPending && millis() - timer >= DEBOUNCE_MS) {
+                switchPending = false;
+                isr = false;
+                return true;
+            }
+    return false;
 }
 
 /* Prints the status on the second row of the LCD */
@@ -118,6 +133,8 @@ void lightOn(byte light) {
     digitalWrite(previous, HIGH);
 }
 
+/* ISR, on mode RISING for BUTTON pin */
 void buttonISR() {
-    buttonPressed = true;
+    if (!isr && digitalRead(BUTTON) == HIGH)
+        isr = true;
 }
