@@ -118,7 +118,7 @@ void setLCDPlayingStatus(byte playing) {
     lcd.setCursor(0, 1);
     lcd.write(playing);
     lcd.setCursor(2, 1);
-    lcd.print(playing ? "Playing" : "Paused");
+    lcd.print(playing ? "Playing" : "Paused ");
 }
 
 /* Turns off the light previously given to the function if required, turns on the one
