@@ -2,6 +2,7 @@
 
 #include "compile_settings.h"
 
+int averagedDialRead();
 bool buttonPressed();
 void setLCDPlayingStatus(byte playing);
 void lightOn(byte light);
@@ -44,7 +45,7 @@ void setup() {
     lcd.home();
     lcd.print("Note 1:");
 
-
+    int prev_frequency;
     int frequency;
     char freq_str[5];
 
@@ -54,10 +55,14 @@ void setup() {
         lcd.setCursor(0, 1);
 
         while (!buttonPressed()) { // Until interrupt
-            frequency = analogRead(DIAL) + 31;
-            sprintf(freq_str, "%.4d", frequency);
-            lcd.print(freq_str);
-            lcd.setCursor(0, 1);
+            frequency = averagedDialRead() + 31;
+            if (frequency != prev_frequency) {
+                sprintf(freq_str, "%.4d", frequency);
+                lcd.print(freq_str);
+                tone(4, frequency);
+                lcd.setCursor(0, 1);
+                prev_frequency = frequency;
+            }
         }
 
         notes[i] = frequency;
@@ -82,7 +87,7 @@ void loop() {
         }
 
         /* Update speed */
-        int noteDuration = 1054 - analogRead(DIAL);
+        int noteDuration = 1054 - analogRead(DIAL); // Not averaged for duration
         int notePause = noteDuration * 1.3;
         char bpm[4];
         sprintf(bpm, "%.3d", 30 * 1000 / noteDuration);
@@ -94,6 +99,13 @@ void loop() {
         lightOn(i);
         delay(notePause);
     }
+}
+
+/* Returns average of potentiometer reads to reduce fluctuation */
+int averagedDialRead() {
+    static int readAvg = 0;
+    readAvg = readAvg * 0.95 + analogRead(DIAL) * 0.05;
+    return readAvg;
 }
 
 /* Returns if button has been pressed, with debouncing */
