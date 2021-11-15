@@ -35,7 +35,8 @@ const byte playchar[8] = {
 
 void setup() {
     pinMode(BUTTON, INPUT);
-    for (byte i = 4; i <= 12; i++)
+    pinMode(BUZZER, OUTPUT);
+    for (byte i = FIRST_LIGHT; i <= FIRST_LIGHT + 8; i++)
         pinMode(i, OUTPUT);
 
     lcd.init();
@@ -141,7 +142,7 @@ void lightOn(byte light) {
     if (previous)
         digitalWrite(previous, LOW);
 
-    previous = light + 5;
+    previous = light + FIRST_LIGHT;
     digitalWrite(previous, HIGH);
 }
 
