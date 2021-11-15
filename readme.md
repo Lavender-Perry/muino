@@ -13,9 +13,9 @@ If you want to save some time, you should connect them to match compile_settings
 
 You should use resistors on the LEDs & button like always. \
 If you did not connect everything to match compile_settings.h,
-you should edit compile_settings.h to match how you connected everything. \
+you should edit compile_settings.h to match how you connected everything.
 
-If you have questions, ask in issue #1.
+If you have questions, please ask in issue #1.
 
 ## Uploading the code
 First, make sure [the LiquidCrystal_I2C library](https://www.arduino.cc/reference/en/libraries/liquidcrystal-i2c/) is installed. \
