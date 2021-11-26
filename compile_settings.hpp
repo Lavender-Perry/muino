@@ -4,7 +4,7 @@
 #define LCD_I2C 0x27 // I2C address of the LCD screen
 
 #define DIAL A0 // Pin the potentiometer is on
-#define BUTTON 3 // Pin the button is on
+// Pin the button is on
 
 #define BUZZER 4 // Pin the buzzer is on
 
@@ -13,5 +13,7 @@
                       // (for example if FIRST_LIGHT is 5 the lights will be 5-12)
 
 #define DEBOUNCE_MS 10 // Millisecond delay required between valid button presses
+
+const int buttons[2] = { 2, 3 }; // Pins the buttons are on
 
 #endif // COMPILE_SETTINGS_H

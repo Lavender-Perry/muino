@@ -1,16 +1,17 @@
 #include <LiquidCrystal_I2C.h>
 
-#include "compile_settings.h"
+#include "compile_settings.hpp"
 
 int averagedDialRead();
-bool buttonPressed();
+bool buttonPressed(byte btnIdx);
 void setLCDPlayingStatus(byte playing);
 void lightOn(byte light);
-void buttonISR();
+void button0ISR();
+void button1ISR();
 
 LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
 int notes[8]; // Frequencies of notes in the melody
-volatile bool isr = false; // If ISR has occurred since last button read
+volatile bool isr[2] = { false }; // If ISR has occurred since last button read
 
 const byte pausechar[8] = {
     B11011,
@@ -34,7 +35,8 @@ const byte playchar[8] = {
 };
 
 void setup() {
-    pinMode(BUTTON, INPUT);
+    for (byte i = 0; i < 2; i++)
+        pinMode(buttons[i], INPUT);
     pinMode(BUZZER, OUTPUT);
     for (byte i = FIRST_LIGHT; i <= FIRST_LIGHT + 8; i++)
         pinMode(i, OUTPUT);
@@ -50,12 +52,17 @@ void setup() {
     int frequency;
     char freq_str[5];
 
-    attachInterrupt(digitalPinToInterrupt(BUTTON), buttonISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(buttons[0]), button0ISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(buttons[1]), button1ISR, RISING);
 
     for (byte i = 0; i < 8; i++) {
         lcd.setCursor(0, 1);
 
-        while (!buttonPressed()) { // Until interrupt
+        while (!buttonPressed(0)) {
+            if (buttonPressed(1)) {
+                frequency = 0;
+                break;
+            }
             frequency = averagedDialRead() + 31;
             if (frequency != prev_frequency) {
                 sprintf(freq_str, "%.4d", frequency);
@@ -80,10 +87,9 @@ void setup() {
 void loop() {
     for (byte i = 0; i < 8; i++) {
         /* Check if pause button pressed */
-        if (buttonPressed()) {
+        if (buttonPressed(0)) {
             setLCDPlayingStatus(0);
-            // Wait until pressed again
-            while (!buttonPressed());
+            while (!buttonPressed(0)); // Wait until pressed again
             setLCDPlayingStatus(1);
         }
 
@@ -96,7 +102,8 @@ void loop() {
         lcd.print(bpm);
 
         /* Play note */
-        tone(4, notes[i], noteDuration);
+        if (notes[i])
+            tone(4, notes[i], noteDuration);
         lightOn(i);
         delay(notePause);
     }
@@ -109,24 +116,25 @@ int averagedDialRead() {
     return readAvg;
 }
 
-/* Returns if button has been pressed, with debouncing */
-bool buttonPressed() {
-    static bool switchPending = false;
-    static long int timer;
-    if (isr)
-        if (digitalRead(BUTTON) == HIGH) {
-            switchPending = true;
-            timer = millis();
-        } else
-            if (switchPending && millis() - timer >= DEBOUNCE_MS) {
-                switchPending = false;
-                isr = false;
-                return true;
-            }
+/* Returns if button has been pressed, with debouncing
+ * btnIdx must be 0 or 1 */
+bool buttonPressed(byte btnIdx) {
+    static bool switchPending[2] = { false };
+    static long int timer[2];
+    if (isr[btnIdx])
+        if (digitalRead(buttons[btnIdx]) == HIGH) {
+            switchPending[btnIdx] = true;
+            timer[btnIdx] = millis();
+        } else if (switchPending[btnIdx] && millis() - timer[btnIdx] >= DEBOUNCE_MS) {
+            switchPending[btnIdx] = false;
+            isr[btnIdx] = false;
+            return true;
+        }
     return false;
 }
 
-/* Prints the status on the second row of the LCD */
+/* Prints the status on the second row of the LCD
+ * playing must be 0 or 1 */
 void setLCDPlayingStatus(byte playing) {
     lcd.setCursor(0, 1);
     lcd.write(playing);
@@ -146,8 +154,12 @@ void lightOn(byte light) {
     digitalWrite(previous, HIGH);
 }
 
-/* ISR, on mode RISING for BUTTON pin */
-void buttonISR() {
-    if (!isr && digitalRead(BUTTON) == HIGH)
-        isr = true;
+/* ISRs, on mode RISING for buttons[0] / buttons[1] pins */
+void button0ISR() {
+    if (!isr[0] && digitalRead(buttons[0]) == HIGH)
+        isr[0] = true;
+}
+void button1ISR() {
+    if (!isr[1] && digitalRead(buttons[1]) == HIGH)
+        isr[1] = true;
 }
