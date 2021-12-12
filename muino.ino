@@ -5,12 +5,15 @@
 int averagedDialRead();
 bool buttonPressed(byte btnIdx);
 void setLCDPlayingStatus(byte playing);
-void lightOn(byte light);
+void lightOn(byte i);
 void button0ISR();
 void button1ISR();
 
 LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
-int notes[8]; // Frequencies of notes in the melody
+
+int noteAmount = 1;
+int notes[MAX_NOTE_AMT]; // Frequencies of notes in the melody
+
 volatile bool isr[2] = { false }; // If ISR has occurred since last button read
 
 const byte pausechar[8] = {
@@ -35,27 +38,45 @@ const byte playchar[8] = {
 };
 
 void setup() {
+    /* Pin setup */
     for (byte i = 0; i < 2; i++)
         pinMode(buttons[i], INPUT);
     pinMode(BUZZER, OUTPUT);
     for (byte i = FIRST_LIGHT; i <= FIRST_LIGHT + 8; i++)
         pinMode(i, OUTPUT);
 
+    /* LCD setup */
     lcd.init();
     lcd.createChar(0, pausechar);
     lcd.createChar(1, playchar);
     lcd.backlight();
-    lcd.home();
-    lcd.print("Note 1:");
 
     int prev_frequency;
     int frequency;
     char freq_str[5];
 
+    /* Set up buttons */
     attachInterrupt(digitalPinToInterrupt(buttons[0]), button0ISR, RISING);
     attachInterrupt(digitalPinToInterrupt(buttons[1]), button1ISR, RISING);
 
-    for (byte i = 0; i < 8; i++) {
+    /* Get amount of notes in melody (button 0 presses before button 1 pressed + 1) */
+    lcd.home();
+    lcd.print("Note amount:");
+    while (!buttonPressed(1)) {
+        lcd.setCursor(0, 1);
+        lcd.print(String(noteAmount));
+        if (buttonPressed(0)) {
+            noteAmount++;
+            if (noteAmount == MAX_NOTE_AMT)
+                break;
+        }
+    }
+
+    /* Get note frequencies / rests */
+    lcd.clear();
+    lcd.home();
+    lcd.print("Note 1:");
+    for (byte i = 0; i < noteAmount; i++) {
         lcd.setCursor(0, 1);
 
         while (!buttonPressed(0)) {
@@ -85,7 +106,7 @@ void setup() {
 }
 
 void loop() {
-    for (byte i = 0; i < 8; i++) {
+    for (byte i = 0; i < noteAmount; i++) {
         /* Check if pause button pressed */
         if (buttonPressed(0)) {
             setLCDPlayingStatus(0);
@@ -102,7 +123,7 @@ void loop() {
         lcd.print(bpm);
 
         /* Play note */
-        if (notes[i])
+        if (notes[i] != 0)
             tone(4, notes[i], noteDuration);
         lightOn(i);
         delay(notePause);
@@ -144,13 +165,13 @@ void setLCDPlayingStatus(byte playing) {
 
 /* Turns off the light previously given to the function if required, turns on the one
  * given. Lights are referred to as 0-7. */
-void lightOn(byte light) {
+void lightOn(byte i) {
     static byte previous = 0;
 
-    if (previous)
+    if (previous != 0)
         digitalWrite(previous, LOW);
 
-    previous = light + FIRST_LIGHT;
+    previous = i % 8 + FIRST_LIGHT;
     digitalWrite(previous, HIGH);
 }
 
