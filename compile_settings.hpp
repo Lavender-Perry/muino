@@ -11,9 +11,13 @@
                       // The rest of the lights will be the 7 pins after
                       // (for example if FIRST_LIGHT is 5 the lights will be 5-12)
 
-#define MAX_NOTE_AMT 512 // Maximum amount of notes in a melody
+#define MAX_NOTE_AMT 256 // Maximum amount of notes in a melody
 
 #define DEBOUNCE_MS 10 // Millisecond delay required between valid button presses
+
+#define HAS_EEPROM // If your board does not have EEPROM
+                   // or you don't want melody saving features
+                   // remove or comment out this line.
 
 const int buttons[2] = { 2, 3 }; // Pins the buttons are on
 
