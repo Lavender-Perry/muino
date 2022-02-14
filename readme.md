@@ -6,7 +6,7 @@ It has only been tested on the Arduino Uno, so there may be issues with other bo
 ## Creating the circuit
 
 You will need to connect the following to your Arduino
-If you want to save some time, you should connect them to match compile\_settings.hpp
+If you want to save some time, you should connect them to match `compile_settings.hpp`
 
 *   8 LEDs (must be on adjacent pins)
 *   A buzzer compatable with the tone function
@@ -15,8 +15,8 @@ If you want to save some time, you should connect them to match compile\_setting
 *   A 16x2 LCD screen via I2C
 
 You should use resistors on the LEDs & button like always. \
-If you did not connect everything to match compile\_settings.hpp,
-you should edit compile\_settings.hpp to match how you connected everything.
+If you did not connect everything to match `compile_settings.hpp`,
+you should edit `compile_settings.hpp` to match how you connected everything.
 
 If you have questions, please ask in issue #1.
 
