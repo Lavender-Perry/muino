@@ -5,21 +5,14 @@
 #endif // HAS_EEPROM
 #include <LiquidCrystal_I2C.h>
 
-int averagedDialRead();
-bool buttonPressed(byte i);
-void setLCDPlayingStatus(byte playing);
-void lightOn(byte i);
-void button0ISR();
-void button1ISR();
-
-LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
+#ifdef HAS_CONTROLS
+volatile bool isr[2] = { false }; // If ISR has occurred since last button read
+#endif // HAS_CONTROLS
 
 int note_amount = 1;
 int notes[MAX_NOTE_AMT]; // Frequencies of notes in the melody
 
-volatile bool isr[2] = { false }; // If ISR has occurred since last button read
-
-const uint8_t pausechar[8] = {
+uint8_t pausechar[8] = {
     B11011,
     B11011,
     B11011,
@@ -29,7 +22,7 @@ const uint8_t pausechar[8] = {
     B11011,
     B11011
 };
-const uint8_t playchar[8] = {
+uint8_t playchar[8] = {
     B10000,
     B11000,
     B11100,
@@ -40,14 +33,12 @@ const uint8_t playchar[8] = {
     B10000
 };
 
+LiquidCrystal_I2C lcd(LCD_I2C, 16, 2);
+
 void setup() {
     Serial.begin(9600);
 
-    // Pin setup
-    for (byte i = 0; i < 2; i++) {
-        pinMode(buttons[i], INPUT);
-    }
-    pinMode(BUZZER, OUTPUT);
+    // Lights setup
     for (byte i = FIRST_LIGHT; i <= FIRST_LIGHT + 8; i++) {
         pinMode(i, OUTPUT);
     }
@@ -62,10 +53,6 @@ void setup() {
     int frequency;
     char freq_str[5];
 
-    // Set up buttons
-    attachInterrupt(digitalPinToInterrupt(buttons[0]), button0ISR, RISING);
-    attachInterrupt(digitalPinToInterrupt(buttons[1]), button1ISR, RISING);
-
 #ifdef HAS_EEPROM
     // If there is data to read, set note info to that data
     int res = 0;
@@ -79,6 +66,15 @@ void setup() {
         return;
     }
 #endif // HAS_EEPROM
+
+#ifdef HAS_CONTROLS
+    // Controls setup
+    for (byte i = 0; i < 2; i++) {
+        pinMode(buttons[i], INPUT);
+    }
+    pinMode(BUZZER, OUTPUT);
+    attachInterrupt(digitalPinToInterrupt(buttons[0]), button0ISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(buttons[1]), button1ISR, RISING);
 
     // Get amount of notes in melody (button 0 presses before button 1 pressed + 1)
     lcd.home();
@@ -120,6 +116,7 @@ void setup() {
         lcd.setCursor(5, 0);
         lcd.print(String(i + 2));
     }
+#endif // HAS_CONTROLS
 
     lcd.clear();
     lcd.home();
@@ -128,7 +125,9 @@ void setup() {
 }
 
 void loop() {
+#ifdef HAS_CONTROLS
     playNotes(notes, note_amount, 1054 - analogRead(DIAL));
+#endif // HAS_CONTROLS
 }
 
 void serialEvent() {
@@ -192,12 +191,14 @@ void playNotes(int* notes, int amount, int duration) {
     lcd.print(bpm);
 
     for (byte i = 0; i < amount; i++) {
+#ifdef HAS_CONTROLS
         // Check if pause button pressed
         if (buttonPressed(0)) {
             setLCDPlayingStatus(0);
             while (!buttonPressed(0)); // Wait until pressed again
             setLCDPlayingStatus(1);
         }
+#endif // HAS_CONTROLS
 
         // Play note
         if (notes[i] != 0) {
@@ -208,6 +209,29 @@ void playNotes(int* notes, int amount, int duration) {
     }
 }
 
+/* Prints the status on the second row of the LCD.
+ * playing must be 0 or 1. */
+void setLCDPlayingStatus(byte playing) {
+    lcd.setCursor(0, 1);
+    lcd.write(playing);
+    lcd.setCursor(2, 1);
+    lcd.print(playing ? "Playing" : "Paused ");
+}
+
+/* Turns off the light previously given to the function if required, turns on the one
+ * given.  Wraps around to control 8 lights. */
+void lightOn(byte i) {
+    static byte previous = 0;
+
+    if (previous != 0) {
+        digitalWrite(previous, LOW);
+    }
+
+    previous = i % 8 + FIRST_LIGHT;
+    digitalWrite(previous, HIGH);
+}
+
+#ifdef HAS_CONTROLS
 /* Returns average of potentiometer reads to reduce fluctuation. */
 int averagedDialRead() {
     static int read_avg = 0;
@@ -233,28 +257,6 @@ bool buttonPressed(byte i) {
     return false;
 }
 
-/* Prints the status on the second row of the LCD.
- * playing must be 0 or 1. */
-void setLCDPlayingStatus(byte playing) {
-    lcd.setCursor(0, 1);
-    lcd.write(playing);
-    lcd.setCursor(2, 1);
-    lcd.print(playing ? "Playing" : "Paused ");
-}
-
-/* Turns off the light previously given to the function if required, turns on the one
- * given.  Wraps around to control 8 lights. */
-void lightOn(byte i) {
-    static byte previous = 0;
-
-    if (previous != 0) {
-        digitalWrite(previous, LOW);
-    }
-
-    previous = i % 8 + FIRST_LIGHT;
-    digitalWrite(previous, HIGH);
-}
-
 /* ISRs, on mode RISING for buttons[0] / buttons[1] pins. */
 void button0ISR() {
     if (!isr[0] && digitalRead(buttons[0]) == HIGH) {
@@ -266,3 +268,4 @@ void button1ISR() {
         isr[1] = true;
     }
 }
+#endif // HAS_CONTROLS
