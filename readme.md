@@ -18,7 +18,7 @@ You should use resistors on the LEDs & button like always. \
 If you did not connect everything to match `compile_settings.hpp`,
 you should edit `compile_settings.hpp` to match how you connected everything.
 
-If you have questions, please ask in issue #1.
+If you have questions, please make a new issue.
 
 ## Uploading the code
 
@@ -27,3 +27,4 @@ After that, it works the same as any other Arduino sketch: \
 [CLI Tutorial](https://arduino.github.io/arduino-cli/0.19/getting-started/#compile-and-upload-the-sketch) \
 [IDE 1 Tutorial](https://docs.arduino.cc/software/ide-v1/tutorials/arduino-ide-v1-basics#uploading) \
 [IDE 2 Tutorial](https://docs.arduino.cc/software/ide-v2/tutorials/getting-started/ide-v2-uploading-a-sketch)
+
